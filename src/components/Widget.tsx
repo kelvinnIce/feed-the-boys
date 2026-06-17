@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Settings as SettingsIcon, List, Minus } from 'lucide-react'
 import type { Cat, HungerState, Schedule } from '../types'
 import { CatDisplay } from './CatDisplay'
-import { formatElapsed, formatTime, formatNextFeeding, getOverdueLabel } from '../lib/hunger'
+import { formatNextFeeding, getNextFeedingTime, getOverdueLabel } from '../lib/hunger'
+import catWaiting from '../assets/cat-mood/cat-waiting.png'
 
 type Props = {
   lastFed: number | null
@@ -114,30 +115,28 @@ export function Widget({
   const isFed = hungerState === 'fed'
   const overdueLabel = lastFed ? getOverdueLabel(lastFed, schedule) : ''
 
+  // Split "4:00 PM · in 1h 54m" → ["4:00 PM", "in 1h 54m"] for pill rendering
+  const nextFeedingText = lastFed ? formatNextFeeding(lastFed, schedule) : ''
+  const [nextTime, nextCountdown] = nextFeedingText.split(' · ')
+  const nextFeedingTs = lastFed ? getNextFeedingTime(lastFed, schedule) : null
+  const isUpcoming = nextFeedingTs ? nextFeedingTs > Date.now() : false
+
+  const iconClass = isFed
+    ? 'text-zinc-400 hover:text-zinc-700'
+    : 'text-zinc-500 hover:text-zinc-300'
+
   const bottomIcons = (
     <div
       className="flex items-center gap-1 mt-2"
       style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
-      <button
-        onClick={onSettings}
-        className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
-        title="Settings"
-      >
+      <button onClick={onSettings} className={`${iconClass} transition-colors p-1`} title="Settings">
         <SettingsIcon size={14} />
       </button>
-      <button
-        onClick={onHistory}
-        className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
-        title="History"
-      >
+      <button onClick={onHistory} className={`${iconClass} transition-colors p-1`} title="History">
         <List size={14} />
       </button>
-      <button
-        onClick={onMinimize}
-        className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 ml-auto"
-        title="Minimize"
-      >
+      <button onClick={onMinimize} className={`${iconClass} transition-colors p-1 ml-auto`} title="Minimize">
         <Minus size={14} />
       </button>
     </div>
@@ -145,41 +144,56 @@ export function Widget({
 
   return (
     <div
-      className="w-[320px] h-[280px] rounded-2xl border border-zinc-800 bg-zinc-900/95 backdrop-blur shadow-2xl p-4 flex flex-col"
+      className={`w-[320px] h-[280px] rounded-2xl border shadow-2xl p-4 flex flex-col backdrop-blur transition-colors duration-300 ${
+        isFed && lastFed
+          ? 'bg-white border-zinc-200'
+          : 'bg-zinc-900/95 border-zinc-800'
+      }`}
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {isFed && lastFed ? (
-        /* Fed state — info layout */
-        <div className="flex flex-col h-full">
+        /* Fed state — illustration layout with next feeding pill */
+        <div className="flex flex-col h-full items-center">
+          {/* Next feeding pill */}
           <div
-            className="flex gap-1.5 flex-wrap"
+            className="bg-zinc-900 rounded-2xl px-5 py-2 text-center w-full"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
-            {cats.map(cat => (
-              <span
-                key={cat.id}
-                className="bg-zinc-800 text-white rounded-full px-2 py-0.5 text-xs inline-flex items-center gap-1"
-              >
-                <span>{cat.emoji}</span>
-                <span>{cat.name}</span>
-              </span>
-            ))}
+            <p className="text-[10px] text-white/50 uppercase tracking-widest leading-none mb-0.5">
+              Next Feeding
+            </p>
+            <p className="text-sm font-bold text-white leading-tight flex items-center justify-center gap-1.5">
+              <span>{nextTime}</span>
+              <span className="text-white/40">·</span>
+              {isUpcoming && (
+                <span
+                  style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: '#4ade80',
+                    display: 'inline-block',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+              <span>{nextCountdown}</span>
+            </p>
           </div>
 
-          <div className="flex-1 flex flex-col justify-center gap-3 mt-2">
-            <div>
-              <p className="text-xs text-white/50 uppercase tracking-widest">Last fed</p>
-              <p className="text-sm text-white">
-                {formatTime(lastFed)} · {formatElapsed(lastFed)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-white/50 uppercase tracking-widest">Next feeding</p>
-              <p className="text-sm text-white">{formatNextFeeding(lastFed, schedule)}</p>
-            </div>
+          {/* Cat illustration */}
+          <div
+            className="flex-1 flex items-center justify-center"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
+            <img
+              src={catWaiting}
+              alt=""
+              style={{ height: '138px', objectFit: 'contain' }}
+            />
           </div>
 
-          <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+          <div className="w-full" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
             <FeedButton fed={fed} onClick={handleFeed} />
           </div>
           {bottomIcons}
