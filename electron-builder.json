@@ -1,0 +1,13 @@
+{
+  "appId": "com.feedtheboys.app",
+  "productName": "Feed The Boys",
+  "directories": { "output": "release" },
+  "mac": {
+    "target": "dmg",
+    "category": "public.app-category.utilities"
+  },
+  "win": {
+    "target": "nsis"
+  },
+  "files": ["dist/**/*", "dist-electron/**/*", "package.json"]
+}
