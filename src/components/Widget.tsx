@@ -26,7 +26,7 @@ const GREEN_BG = 'linear-gradient(180deg, #78EF85 0%, #4CC85A 45%, #38A848 100%)
 
 const IDLE_DELAY = 5 * 60 * 1000
 
-function FeedButton({ fed, onClick }: { fed: boolean; onClick: () => void }) {
+function FeedButton({ fed, onClick, singular }: { fed: boolean; onClick: () => void; singular: boolean }) {
   const [pressed, setPressed] = useState(false)
   const isDown = pressed && !fed
 
@@ -44,7 +44,7 @@ function FeedButton({ fed, onClick }: { fed: boolean; onClick: () => void }) {
         overflow: 'hidden',
         fontWeight: '700',
         fontSize: '13px',
-        letterSpacing: '2px',
+        letterSpacing: '1.2px',
         textTransform: 'uppercase',
         color: fed ? '#1A5C28' : '#7B4200',
         fontFamily: 'inherit',
@@ -72,7 +72,7 @@ function FeedButton({ fed, onClick }: { fed: boolean; onClick: () => void }) {
           pointerEvents: 'none',
         }}
       />
-      {fed ? '✓ Fed!' : 'Fed the cats'}
+      {fed ? '✓ Fed!' : singular ? 'Fed the cat' : 'Fed the cats'}
     </button>
   )
 }
@@ -152,7 +152,7 @@ export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSetting
             />
           </div>
           <div className="w-full" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <FeedButton fed={fed} onClick={handleFeed} />
+            <FeedButton fed={fed} onClick={handleFeed} singular={cats.length === 1} />
           </div>
         </div>
       ) : isFed && lastFed ? (
@@ -175,7 +175,7 @@ export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSetting
           </div>
 
           <div className="w-full" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <FeedButton fed={fed} onClick={handleFeed} />
+            <FeedButton fed={fed} onClick={handleFeed} singular={cats.length === 1} />
           </div>
           {bottomIcons}
         </div>
@@ -192,7 +192,7 @@ export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSetting
           </div>
 
           <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <FeedButton fed={fed} onClick={handleFeed} />
+            <FeedButton fed={fed} onClick={handleFeed} singular={cats.length === 1} />
           </div>
           {bottomIcons}
         </div>
