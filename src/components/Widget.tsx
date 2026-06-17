@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Settings as SettingsIcon, List, Minus } from 'lucide-react'
 import type { Cat, HungerState, Schedule } from '../types'
-import { MESSAGE_BANK, resolveCatsToken } from '../lib/messages'
+import { CatDisplay } from './CatDisplay'
 import { formatElapsed, formatTime, formatNextFeeding, getOverdueLabel } from '../lib/hunger'
 
 type Props = {
@@ -15,24 +15,90 @@ type Props = {
   onMinimize: () => void
 }
 
-export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSettings, onHistory, onMinimize }: Props) {
-  const [fed, setFed] = useState(false)
-  const [msgIndex, setMsgIndex] = useState(0)
+const GOLDEN_BG = [
+  'radial-gradient(circle at 13% 46%, rgba(150,85,0,0.22) 8px, transparent 9px)',
+  'radial-gradient(circle at 83% 63%, rgba(150,85,0,0.14) 5px, transparent 6px)',
+  'linear-gradient(180deg, #FFE870 0%, #FFD020 45%, #EFA000 100%)',
+].join(', ')
 
-  useEffect(() => {
-    const variants = MESSAGE_BANK[hungerState]
-    setMsgIndex(Math.floor(Math.random() * variants.length))
-  }, [hungerState])
+const GREEN_BG = 'linear-gradient(180deg, #78EF85 0%, #4CC85A 45%, #38A848 100%)'
+
+function FeedButton({
+  fed,
+  onClick,
+}: {
+  fed: boolean
+  onClick: () => void
+}) {
+  const [pressed, setPressed] = useState(false)
+  const isDown = pressed && !fed
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      style={{
+        width: '100%',
+        height: '50px',
+        borderRadius: '13px',
+        position: 'relative',
+        overflow: 'hidden',
+        fontWeight: '700',
+        fontSize: '15px',
+        color: fed ? '#1A5C28' : '#7B4200',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        letterSpacing: '0.4px',
+        cursor: fed ? 'default' : 'pointer',
+        border: 'none',
+        outline: 'none',
+        background: fed ? GREEN_BG : GOLDEN_BG,
+        boxShadow: fed
+          ? `0 ${isDown ? 1 : 4}px 0 #1F7830, 0 ${isDown ? 2 : 6}px 10px rgba(0,0,0,0.25)`
+          : `0 ${isDown ? 1 : 5}px 0 #A06800, 0 ${isDown ? 2 : 8}px 14px rgba(0,0,0,0.3)`,
+        transform: isDown ? 'translateY(4px)' : fed ? 'translateY(1px)' : 'translateY(0)',
+        transition: 'transform 0.06s ease, box-shadow 0.06s ease',
+        WebkitAppRegion: 'no-drag',
+      } as React.CSSProperties}
+    >
+      {/* Glossy highlight */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '3px',
+          left: '6%',
+          width: '88%',
+          height: '40%',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 100%)',
+          borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
+          pointerEvents: 'none',
+        }}
+      />
+      {fed ? '✓ Fed!' : 'Fed the cats'}
+    </button>
+  )
+}
+
+export function Widget({
+  lastFed,
+  cats,
+  schedule,
+  hungerState,
+  onFeed,
+  onSettings,
+  onHistory,
+  onMinimize,
+}: Props) {
+  const [fed, setFed] = useState(false)
 
   const handleFeed = async () => {
+    if (fed) return
     setFed(true)
     await onFeed()
     setTimeout(() => setFed(false), 1200)
   }
 
-  const msg = MESSAGE_BANK[hungerState][msgIndex]
-  const headline = resolveCatsToken(msg.headline, cats)
-  const subtext = msg.subtext ? resolveCatsToken(msg.subtext, cats) : undefined
   const isFed = hungerState === 'fed'
   const overdueLabel = lastFed ? getOverdueLabel(lastFed, schedule) : ''
 
@@ -71,9 +137,12 @@ export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSetting
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {isFed && lastFed ? (
+        /* Fed state — info layout */
         <div className="flex flex-col h-full">
-          {/* Cat badges */}
-          <div className="flex gap-1.5 flex-wrap" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+          <div
+            className="flex gap-1.5 flex-wrap"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
             {cats.map(cat => (
               <span
                 key={cat.id}
@@ -99,46 +168,28 @@ export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSetting
           </div>
 
           <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <button
-              onClick={handleFeed}
-              className={`w-full h-11 rounded-xl text-sm font-semibold text-white transition-colors ${
-                fed ? 'bg-green-500 cursor-default' : 'bg-orange-500 hover:bg-orange-600'
-              }`}
-            >
-              {fed ? '✓ Fed!' : 'FED THEM'}
-            </button>
+            <FeedButton fed={fed} onClick={handleFeed} />
           </div>
-
           {bottomIcons}
         </div>
       ) : (
+        /* Hungry / unknown — illustration layout */
         <div key={hungerState} className="flex flex-col h-full state-transition">
-          <div className="flex-1 flex flex-col items-center justify-center gap-1">
-            <span className="text-5xl text-center block">{msg.emoji}</span>
-            <p className="text-sm font-medium text-zinc-100 text-center leading-snug mt-2">
-              {headline}
-            </p>
-            {subtext && (
-              <p className="text-xs text-zinc-400 text-center leading-relaxed">{subtext}</p>
-            )}
+          <div
+            className="flex-1 flex flex-col items-center justify-center"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
+            <CatDisplay state={hungerState} />
             {overdueLabel && (
-              <p className="text-xs text-orange-400 font-medium text-center tracking-widest uppercase mt-2">
-                — {overdueLabel} —
+              <p className="text-xs text-orange-400 font-medium tracking-widest uppercase mt-1">
+                {overdueLabel}
               </p>
             )}
           </div>
 
           <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <button
-              onClick={handleFeed}
-              className={`w-full h-11 rounded-xl text-sm font-semibold text-white transition-colors ${
-                fed ? 'bg-green-500 cursor-default' : 'bg-orange-500 hover:bg-orange-600'
-              }`}
-            >
-              {fed ? '✓ Fed!' : 'FED THEM'}
-            </button>
+            <FeedButton fed={fed} onClick={handleFeed} />
           </div>
-
           {bottomIcons}
         </div>
       )}
