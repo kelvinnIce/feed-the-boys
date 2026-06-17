@@ -87,3 +87,57 @@ Started from an implementation prompt (`feed-the-boys-prompt.md`) and built a co
 - **Window restore after minimize**: `win.minimize()` minimizes to Dock since `skipTaskbar: true` is set. Verify this feels right on macOS, or switch to `win.hide()` + a tray icon restore flow.
 - **`npm run build` not yet tested**: The `electron-builder` packaging step was not run this session. Test `npm run build` to verify it produces a `.dmg`.
 - **eslint.config.js uses ESM syntax** (`import`): Removing `"type": "module"` means `npm run lint` will fail because `eslint.config.js` has `import` statements in a now-CJS context. Either rename to `eslint.config.mjs` or convert to `require()`.
+
+---
+
+## Session: June 17 2026 (continued)
+
+### What was built
+
+Replaced emoji placeholders with custom PNG illustrations for each hunger state, made all arc text white and legible, wired up a message rotation system that cycles through 3 copy variants per state every 5-7 minutes without any user interaction.
+
+---
+
+### Key decisions
+
+- **PNG illustrations go in `src/assets/cat-mood/`** — importing them as Vite module assets (via `import catFed from '../assets/cat-mood/cat-fed.png'`) lets Vite handle URL rewriting for both the dev server and the production `dist/` build. Putting them in `public/` would require manual path management in Electron's `file://` protocol context.
+
+- **White background PNGs rendered in a rounded container** — The illustrations have white backgrounds (not transparent). Rather than using CSS blend modes (which darken the cat illustration itself on a dark card), the image sits inside a `rgba(255, 250, 242, 1)` rounded rectangle. This creates a deliberate "sticker card" effect inside the dark widget.
+
+- **Copy rotation is timer-based, not state-based** — The previous implementation only swapped messages when `hungerState` changed. Now a `setTimeout` in Widget.tsx fires every 5-7 minutes (randomized each time) and increments `copyIndex`. `CatDisplay` uses `copyIndex % messages.length` to pick the current variant. The timer is cleared immediately when hunger state is `fed`.
+
+- **3 message variants per state** — Enough to feel varied across a ~15-20 minute window without exhausting a message pool. The pattern from `messages.ts` is now embedded in `COMPOSITIONS` directly alongside the image mapping, so the state config is self-contained.
+
+- **SVG drop-shadow filter for text legibility** — White arc text on a dark card is inherently legible, but the SVG `<feDropShadow>` filter adds a subtle `rgba(0,0,0,0.6)` shadow that prevents the text from disappearing if the background behind it is lighter (e.g., the cat illustration's white container).
+
+---
+
+### Problems hit + how they were fixed
+
+- **`request_access` for screenshot timed out (300s)** — Can't visually verify the widget mid-session from this tool. Verified via clean build output (`npm run dev` produced zero errors, Electron process confirmed running via `pgrep`). Known limitation from prior session as well.
+
+---
+
+### Repetitive patterns to remember
+
+- **Vite asset imports for Electron** — Always import images as `import img from '../assets/filename.png'` rather than putting them in `public/` and using string paths. Vite handles the URL rewriting; string paths break under Electron's `file://` protocol in production.
+
+- **PNG with white background on dark UI** — `mix-blend-mode: multiply` sounds right but darkens the illustration itself on a very dark card background. The "sticker card" approach (rounded container with light fill) is more predictable.
+
+---
+
+### Permission prompts this session
+
+| What was asked | Why | Outcome |
+|---|---|---|
+| `request_access` for screenshot | Verify widget UI after changes | Timed out (300s) — verified via build logs + pgrep instead |
+| `gh repo create feed-the-boys` | Push to GitHub for the first time | Approved — created public repo at github.com/kelvinnIce/feed-the-boys |
+
+---
+
+### Open questions / next session
+
+- **Screenshot verification still pending** — Neither session has been able to visually confirm the widget looks right. A fresh `request_access` + screenshot at the start of the next session should be the first thing done.
+- **Image white background feels intentional but unverified** — The sticker-card approach may look clunky depending on how much of the card is visible. An alternative is sourcing transparent-background versions of the illustrations.
+- **`npm run build` still untested** — The packaging step (`electron-builder`) has not been run. A `.dmg` is needed before the app can be shared or installed permanently.
+- **GitHub repo is live**: [github.com/kelvinnIce/feed-the-boys](https://github.com/kelvinnIce/feed-the-boys)
