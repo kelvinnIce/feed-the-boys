@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Settings as SettingsIcon, List, Minus } from 'lucide-react'
 import type { Cat, HungerState, Schedule } from '../types'
 import { CatDisplay } from './CatDisplay'
@@ -91,6 +91,18 @@ export function Widget({
   onMinimize,
 }: Props) {
   const [fed, setFed] = useState(false)
+  const [copyIndex, setCopyIndex] = useState(0)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Rotate copy every 5-7 minutes while cats haven't been fed
+  useEffect(() => {
+    if (hungerState === 'fed') return
+    const delay = (5 + Math.random() * 2) * 60 * 1000
+    copyTimerRef.current = setTimeout(() => setCopyIndex(i => i + 1), delay)
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    }
+  }, [copyIndex, hungerState])
 
   const handleFeed = async () => {
     if (fed) return
@@ -146,7 +158,7 @@ export function Widget({
             {cats.map(cat => (
               <span
                 key={cat.id}
-                className="bg-zinc-800 text-zinc-300 rounded-full px-2 py-0.5 text-xs inline-flex items-center gap-1"
+                className="bg-zinc-800 text-white rounded-full px-2 py-0.5 text-xs inline-flex items-center gap-1"
               >
                 <span>{cat.emoji}</span>
                 <span>{cat.name}</span>
@@ -156,14 +168,14 @@ export function Widget({
 
           <div className="flex-1 flex flex-col justify-center gap-3 mt-2">
             <div>
-              <p className="text-xs text-zinc-500 uppercase tracking-widest">Last fed</p>
-              <p className="text-sm text-zinc-200">
+              <p className="text-xs text-white/50 uppercase tracking-widest">Last fed</p>
+              <p className="text-sm text-white">
                 {formatTime(lastFed)} · {formatElapsed(lastFed)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-zinc-500 uppercase tracking-widest">Next feeding</p>
-              <p className="text-sm text-zinc-200">{formatNextFeeding(lastFed, schedule)}</p>
+              <p className="text-xs text-white/50 uppercase tracking-widest">Next feeding</p>
+              <p className="text-sm text-white">{formatNextFeeding(lastFed, schedule)}</p>
             </div>
           </div>
 
@@ -179,7 +191,7 @@ export function Widget({
             className="flex-1 flex flex-col items-center justify-center"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
-            <CatDisplay state={hungerState} />
+            <CatDisplay state={hungerState} copyIndex={copyIndex} />
             {overdueLabel && (
               <p className="text-xs text-orange-400 font-medium tracking-widest uppercase mt-1">
                 {overdueLabel}
