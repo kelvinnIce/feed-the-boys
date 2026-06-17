@@ -138,22 +138,17 @@ export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSetting
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {isIdle ? (
-        /* Idle — cat + button only, tap cat to wake */
-        <div className="flex flex-col h-full items-center">
-          <div
-            className="flex-1 flex items-center justify-center cursor-pointer"
-            onClick={resetIdle}
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          >
-            <img
-              src={STATE_IMAGES[hungerState]}
-              alt=""
-              style={{ height: '148px', objectFit: 'contain' }}
-            />
-          </div>
-          <div className="w-full" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <FeedButton fed={fed} onClick={handleFeed} singular={cats.length === 1} />
-          </div>
+        /* Idle — illustration only, tap to wake */
+        <div
+          className="flex h-full items-center justify-center cursor-pointer"
+          onClick={resetIdle}
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
+          <img
+            src={STATE_IMAGES[hungerState]}
+            alt=""
+            style={{ height: '200px', objectFit: 'contain' }}
+          />
         </div>
       ) : isFed && lastFed ? (
         /* Fed state */
