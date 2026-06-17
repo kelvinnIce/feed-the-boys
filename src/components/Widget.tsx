@@ -134,7 +134,7 @@ export function Widget({ lastFed, cats, schedule, hungerState, onFeed, onSetting
 
   return (
     <div
-      className="w-[320px] h-[280px] rounded-2xl border border-zinc-200 bg-white shadow-2xl p-4 flex flex-col"
+      className={`w-[320px] h-[280px] p-4 flex flex-col ${isIdle ? '' : 'rounded-2xl border border-zinc-200 bg-white shadow-2xl'}`}
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {isIdle ? (
